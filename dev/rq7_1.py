@@ -42,18 +42,18 @@ with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         # print(f.readline())
         chunks = pd.read_json(f, lines=True, chunksize = 10**4, nrows = None)
         for chunk in chunks:
+            processed_rows += len(chunk)
             chunk = chunk[["id","ratings_count", "rating_dist"]] # to shrink needed memory
             chunk = chunk[chunk["ratings_count"]>0] # to exclude books without ratings
             books_with_at_least_one_rating += len(chunk)
             chunk["percentage"] = chunk.apply(lambda row : getPercentage(parseToDict(row['rating_dist']),'5','total'), axis=1)        
             books_with_30Percent_of_ratings_above_4 += len(chunk[chunk["percentage"] > 0.3]) # we interpret over as strictly over
             # print(chunk)
-            processed_rows += len(chunk)
-            print(processed_rows) 
+            print(processed_rows) # in total
 
 print(books_with_30Percent_of_ratings_above_4)
 print(books_with_at_least_one_rating)
 print(books_with_30Percent_of_ratings_above_4 / books_with_at_least_one_rating)
 end = perf_counter()
-duration = start - end
+duration = end - start # 2551.674707954, roughly 40min
 print(duration, "seconds lasted the process.")
