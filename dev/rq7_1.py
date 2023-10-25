@@ -1,3 +1,7 @@
+"""
+This python scripts solve bulletpoint 1 of research question 7, i.e.:
+Estimate the probability that a book has over 30% of the ratings above 4.
+"""
 import pandas as pd
 import zipfile
 from time import perf_counter
