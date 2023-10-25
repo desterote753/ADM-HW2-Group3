@@ -36,7 +36,7 @@ if len(worst_book_ids_of_all_time) > len(set(worst_book_ids_of_all_time)):
 
 processed_rows = 0
 books_with_gt_700_pages_count = 0 # interpreting "more than 700 pages" as "strictly greater than ..."
-worst_book_with_gt_700_pages_count = 0
+worst_books_with_gt_700_pages_count = 0
 
 # zip_path = "F:/adm/LargeBooksKaggle.zip"
 # json_path = r"authors.json/authors.json"
@@ -54,10 +54,10 @@ with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             chunk = chunk[chunk["num_pages"]>700] # to exclude books with <= 700 pages 
             books_with_gt_700_pages_count += len(chunk)
             chunk["oneOftheWorst"] = chunk.apply(lambda row : str(row['id']) in worst_book_ids_of_all_time, axis=1) # TODO: str() is necessary. It would be better if both were ints. But this raises errors. Are there ""-ids? i.e. empty ids?
-            worst_book_with_gt_700_pages_count += len(chunk[chunk["oneOftheWorst"]])
+            worst_books_with_gt_700_pages_count += len(chunk[chunk["oneOftheWorst"]])
             print("processed rows:", processed_rows) # in total
-            print("current estimated probability:", worst_book_with_gt_700_pages_count /  books_with_gt_700_pages_count)
+            print("current estimated probability:", worst_books_with_gt_700_pages_count /  books_with_gt_700_pages_count)
 
-print(worst_book_with_gt_700_pages_count)
+print(worst_books_with_gt_700_pages_count)
 print(books_with_gt_700_pages_count)
-print(worst_book_with_gt_700_pages_count / books_with_gt_700_pages_count)
+print(worst_books_with_gt_700_pages_count / books_with_gt_700_pages_count)
