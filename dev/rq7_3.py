@@ -15,7 +15,7 @@ zip_path = "LargeBooksKaggle.zip"
 json_path = r"list.json/list.json"
 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
     with zip_ref.open(json_path) as f:
-        list_head = pd.read_json(f, lines=True, chunksize = 10**4, nrows = 1) # assuming there is just one list called "The Worst Books of All Time"
+        list_head = pd.read_json(f, lines=True, nrows = 1) # assuming there is just one list called "The Worst Books of All Time"
 
 # assessing the books inside the list "The Worst Books of All Time".
 worst_books_of_all_time = list_head[list_head['title']=="The Worst Books of All Time"]["books"]
@@ -45,7 +45,7 @@ with zipfile.ZipFile(zip_path, 'r') as zip_ref:
     with zip_ref.open(json_path) as f:
         # print("hello")
         # print(f.readline())
-        chunks = pd.read_json(f, lines=True, chunksize = 10**2, nrows = 10**4, dtype=None )
+        chunks = pd.read_json(f, lines=True, chunksize = 10**4, nrows = None, dtype=None )
         for chunk in chunks:
             processed_rows += len(chunk)
             chunk = chunk[["id","num_pages"]] # to shrink needed memory
@@ -55,7 +55,8 @@ with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             books_with_gt_700_pages_count += len(chunk)
             chunk["oneOftheWorst"] = chunk.apply(lambda row : str(row['id']) in worst_book_ids_of_all_time, axis=1) # TODO: str() is necessary. It would be better if both were ints. But this raises errors. Are there ""-ids? i.e. empty ids?
             worst_book_with_gt_700_pages_count += len(chunk[chunk["oneOftheWorst"]])
-            print(processed_rows) # in total
+            print("processed rows:", processed_rows) # in total
+            print("current estimated probability:", worst_book_with_gt_700_pages_count /  books_with_gt_700_pages_count)
 
 print(worst_book_with_gt_700_pages_count)
 print(books_with_gt_700_pages_count)
