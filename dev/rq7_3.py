@@ -61,3 +61,12 @@ with zipfile.ZipFile(zip_path, 'r') as zip_ref:
 print(worst_books_with_gt_700_pages_count)
 print(books_with_gt_700_pages_count)
 print(worst_books_with_gt_700_pages_count / books_with_gt_700_pages_count)
+
+
+"""
+running this script on AWS lasted round about 1 to 1.5 hours and gave
+numerator: 240
+denominator: 863175
+estimated probability: 0.00027804327048396905
+
+"""
