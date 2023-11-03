@@ -151,8 +151,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 dev/config.json
+config.json
 
 # google drive temporary files
 .tmp.driveupload/* 
-config.json
-config.json
