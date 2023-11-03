@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 ### general functions
 def get_from_config(data_dir):
@@ -29,6 +30,26 @@ def parseToDict(mystr):
         mydict[k] = v    
     return mydict
 
+def checkValidityRQ7_1(my_input):
+    """
+    takes a dictionary,
+    returns None if the input is not in  the correct format. otherwise returns the input.
+    """
+    total = 0
+    for k,v in my_input.items():
+        try:
+          v = int(v)
+          if v < 0 :
+            return None
+          total += v
+        except Exception as e:
+          print(e)
+          return None
+    my_input['total'] = total
+    return my_input
+
+
+
 def getRatio(my_dict, key_numerators, key_denominator):
     """
     Takes a dictionary, a list of keys called "key_numerators", and a "key_denominator".
@@ -37,11 +58,14 @@ def getRatio(my_dict, key_numerators, key_denominator):
     And then dividing by the value of the given key_denominator.
     If an ZeroDivisionError occurs None is returned.
     """
-    try:
-        return sum([my_dict[key_numerator] for key_numerator in key_numerators])/my_dict[key_denominator]
-    except ZeroDivisionError as e:
-        print(e)
+    if my_dict is None:
         return None
+    else:
+        try:
+            return sum([my_dict[key_numerator] for key_numerator in key_numerators])/my_dict[key_denominator]
+        except ZeroDivisionError as e:
+            print(e)
+            return None
 
 
 ### functions for RQ 7.2
