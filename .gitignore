@@ -155,3 +155,4 @@ dev/config.json
 # google drive temporary files
 .tmp.driveupload/* 
 config.json
+config.json
