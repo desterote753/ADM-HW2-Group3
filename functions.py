@@ -101,7 +101,8 @@ def myStringToDate(date_string, date_format):
     try:
         res = datetime.strptime(date_string, date_format)
     except ValueError as e:
-        print(e)
+        # print(e)
+        pass
     return res
 
 def myDateToSeconds(initial_date, current_date):
