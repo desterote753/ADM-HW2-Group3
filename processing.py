@@ -22,6 +22,20 @@ def initialize_processing_parameters_from_config():
         nrows = None
     print('nrows set to', nrows)
 
+
+### datacleaning
+
+def checkNumerics(df, col_name):
+    df = df[col_name]
+    df.loc[:,col_name] = pd.to_numeric(df['column_name'], errors='coerce')
+    df.loc[:,'notNull'] = df['column_name'].notnull()
+    return df
+
+    
+
+    
+
+
 ### RQ_7_1
 
 def answer_rq_7_1(data_path):
@@ -123,7 +137,10 @@ def get_worst_book_ids_of_all_time(data_path):
     for entry in worst_books_of_all_time:
     # for book_id in worst_book_ids_of_all_time:
         try:
-            worst_book_ids_of_all_time_set.add(int(entry['book_id']))
+            book_id = str(entry['book_id'])
+            if len(book_id) <= 0:
+                raise ValueError
+            worst_book_ids_of_all_time_set.add(book_id)
         except Exception as e:
             print(e)
             pass
@@ -146,15 +163,16 @@ def get_contingency_table_for_rq_7_3(data_path, worst_book_ids_of_all_time):
     for chunk in pd.read_json(os.path.join( *data_path, "lighter_books" + ".json"), lines=True, chunksize = chunksize, nrows = nrows, dtype=None ):
         processed_rows += len(chunk)
         chunk = chunk[["id","num_pages"]] # to shrink needed memory
-        chunk.loc[:,'id'] = pd.to_numeric(chunk['id'], errors='coerce')
-        chunk.loc[:,'num_pages'] = pd.to_numeric(chunk['num_pages'], errors='coerce')
+        # chunk.loc[:,'id'] = pd.to_numeric(chunk['id'], errors='coerce')
+        # chunk.loc[:,'num_pages'] = pd.to_numeric(chunk['num_pages'], errors='coerce')
         chunk = chunk[ chunk['id'].notnull() & chunk['num_pages'].notnull() ]
         chunk = chunk[ (~chunk['id'].isna()) & (~chunk['num_pages'].isna()) ]
-        # chunk = chunk[ ~chunk['id'].isna()]
+        chunk = chunk[ (chunk['id'] != "" ) & (chunk['num_pages'] != "") ]
+        chunk.loc[:,'num_pages'] = chunk['num_pages'].astype(int)
         chunk = chunk[chunk["num_pages"]>0] # 0 or less pages is assumed to be a database error or a result of non-knowledge.
         chunk["gt700"] = chunk.apply( lambda row: row['num_pages'] > 700 , axis=1)
         # chunk.loc[:,"oneOftheWorst"] = chunk["id"].isin(worst_book_ids_of_all_time)
-        chunk.loc[:,"oneOftheWorst"] = chunk.apply(lambda row : int(row['id']) in worst_book_ids_of_all_time, axis=1) # TODO: str() is necessary. It would be better if both were ints. But this raises errors.
+        chunk.loc[:,"oneOftheWorst"] = chunk.apply(lambda row : str(row['id']) in worst_book_ids_of_all_time, axis=1) # TODO: str() is necessary. It would be better if both were ints. But this raises errors.
         if flag:
             contingency_table = pd.crosstab(chunk['oneOftheWorst'], chunk['gt700'])
             flag = False
