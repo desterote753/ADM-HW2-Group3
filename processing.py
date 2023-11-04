@@ -9,11 +9,15 @@ from scipy.stats import fisher_exact # with this we can perform the fisher test
 from scipy.stats import ks_2samp # kolmogorov-smirnov-two-sample-test
 from sklearn.linear_model import LinearRegression
 
+
+nrows = 3*10**3
+chunksize = 10**3
+
 ### RQ_7_1
 
 def answer_rq_7_1(data_path): # TODO: debug! KEYERROR
-    chunksize = 2*10**5
-    nrows = None
+    # chunksize = 2*10**5
+    # nrows = None
     processed_rows = 0
     books_with_at_least_one_rating = 0
     books_with_30Percent_of_ratings_above_4 = 0
@@ -47,8 +51,8 @@ def answer_rq_7_2(data_path):
     processed_rows = 0
     df = None
     flag = True
-    chunksize = 2*10**5
-    nrows = None # 3*10**5
+    # chunksize = 2*10**5
+    # nrows = None # 3*10**5
 
     start = perf_counter()
     for chunk in pd.read_json( os.path.join( *data_path, "lighter_books" + ".json"), lines=True, nrows=nrows, chunksize=chunksize):
@@ -78,8 +82,8 @@ def get_worst_book_ids_of_all_time(data_path):
     # assessing the books inside the list "The Worst Books of All Time".
     df_new = None # for the sake of RAM
     list_df = None
-    chunksize = 10**4
-    nrows = None # 2*10**4
+    # chunksize = 10**4
+    # nrows = None # 2*10**4
     flag = True
     processed_rows = 0
 
@@ -125,8 +129,8 @@ def get_contingency_table_for_rq_7_3(data_path, worst_book_ids_of_all_time):
     contingency_table = None
     flag = True
 
-    chunksize = 10**5
-    nrows = None # 2*10**5
+    # chunksize = 10**5
+    # nrows = None # 2*10**5
 
     start = perf_counter()
     for chunk in pd.read_json(os.path.join( *data_path, "lighter_books_updated" + ".json"), lines=True, chunksize = chunksize, nrows = nrows, dtype=None ):
@@ -179,8 +183,8 @@ def perform_fisher_test_and_interprete(contingency_table, alpha = 0.05):
 def answer_rq_8_1(data_path):
     books_df = None
     processed_rows = 0
-    chunksize = 2*10**5
-    nrows = None # 2*10**3
+    # chunksize = 2*10**5
+    # nrows = None # 2*10**3
     flag = True
 
     start = perf_counter()
@@ -211,8 +215,8 @@ def answer_rq_8_1(data_path):
 
 def get_languages(data_path):
     processed_rows = 0
-    chunksize = 10**4
-    nrows = None
+    # chunksize = 10**4
+    # nrows = None
     languages_set = set()
     chunks = pd.read_json(os.path.join(*data_path, 'lighter_books' + '.json'), lines=True, chunksize=chunksize, nrows=nrows, dtype={'num_pages':'numeric', 'average_rating':'numeric'})
     for chunk in chunks:
@@ -224,8 +228,8 @@ def get_languages(data_path):
 def get_eng_vs_non_eng(data_path, no_languages):
     books_df = None
     processed_rows = 0
-    chunksize = 10**5
-    nrows = None
+    # chunksize = 10**5
+    # nrows = None
     flag = True
 
     start = perf_counter()
@@ -261,8 +265,8 @@ def perform_ks2s_test_and_interprete(sample1, sample2, alpha=0.05):
 def get_data_on_lazyness(data_path):
     authors_df = None
     processed_rows = 0
-    chunksize = 10**5
-    nrows = None # 4*10**3
+    # chunksize = 10**5
+    # nrows = None # 4*10**3
     flag = True
 
     start = perf_counter()
