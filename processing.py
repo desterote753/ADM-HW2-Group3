@@ -26,9 +26,9 @@ def initialize_processing_parameters_from_config():
 ### datacleaning
 
 def checkNumerics(df, col_name):
-    df = df[col_name]
-    df.loc[:,col_name] = pd.to_numeric(df['column_name'], errors='coerce')
-    df.loc[:,'notNull'] = df['column_name'].notnull()
+    df = df[[col_name]]
+    df.loc[:,col_name] = pd.to_numeric(df[col_name], errors='coerce')
+    df.loc[:,'notNull'] = df[col_name].notnull()
     return df
 
     
