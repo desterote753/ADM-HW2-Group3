@@ -118,11 +118,12 @@ def get_worst_book_ids_of_all_time(data_path):
             warnings.warn("More  than 1 entry")
 
     # assessing the book_ids and deleting duplicates
-    worst_book_ids_of_all_time = [ entry['book_id'] for entry in worst_books_of_all_time ] # assessing the book_ids
+    # worst_book_ids_of_all_time = [ entry['book_id'] for entry in worst_books_of_all_time ] # assessing the book_ids
     worst_book_ids_of_all_time_set = set()
-    for book_id in worst_book_ids_of_all_time:
+    for entry in worst_books_of_all_time:
+    # for book_id in worst_book_ids_of_all_time:
         try:
-            worst_book_ids_of_all_time_set.add(int(book_id))
+            worst_book_ids_of_all_time_set.add(int(entry['book_id']))
         except Exception as e:
             print(e)
             pass
