@@ -15,8 +15,10 @@ nrows = None
 def initialize_processing_parameters_from_config():
     global chunksize
     chunksize = functions.get_from_config('chunksize')
+    print('chunksize set to', chunksize)
     global nrows
     nrows = functions.get_from_config('nrows')
+    print('nrows set to', nrows)
 
 ### RQ_7_1
 
@@ -138,7 +140,7 @@ def get_contingency_table_for_rq_7_3(data_path, worst_book_ids_of_all_time):
     # nrows = None # 2*10**5
 
     start = perf_counter()
-    for chunk in pd.read_json(os.path.join( *data_path, "lighter_books_updated" + ".json"), lines=True, chunksize = chunksize, nrows = nrows, dtype=None ):
+    for chunk in pd.read_json(os.path.join( *data_path, "lighter_books" + ".json"), lines=True, chunksize = chunksize, nrows = nrows, dtype=None ):
         processed_rows += len(chunk)
         chunk = chunk[["id","num_pages"]] # to shrink needed memory
         chunk = chunk[(chunk["num_pages"]!="") & (chunk["id"]!="") ] # to exclude books without pages mentioned or invalid ids
