@@ -145,12 +145,12 @@ def get_contingency_table_for_rq_7_3(data_path, worst_book_ids_of_all_time):
     for chunk in pd.read_json(os.path.join( *data_path, "lighter_books" + ".json"), lines=True, chunksize = chunksize, nrows = nrows, dtype=None ):
         processed_rows += len(chunk)
         chunk = chunk[["id","num_pages"]] # to shrink needed memory
-        chunk = chunk[(chunk["num_pages"]!="") & (chunk["id"]!="") ] # to exclude books without pages mentioned or invalid ids
-        chunk = chunk.astype({'id':'int', 'num_pages':'int' })
-        # chunk.loc[:,'id'] = pd.to_numeric(chunk['id'], errors='coerce')
+        chunk.loc[:,'id'] = pd.to_numeric(chunk['id'], errors='coerce')
+        chunk.loc[:,'num_pages'] = pd.to_numeric(chunk['num_pages'], errors='coerce')
+        chunk = chunk[ chunk['id'].notnull() & chunk['num_pages'].notnull() ]
+        # chunk = chunk[ ~chunk['id'].isna()]
         chunk = chunk[chunk["num_pages"]>0] # 0 or less pages is assumed to be a database error or a result of non-knowledge.
         chunk["gt700"] = chunk.apply( lambda row: row['num_pages'] > 700 , axis=1)
-        chunk = chunk[ ~chunk['id'].isna()]
         chunk.loc[:,"oneOftheWorst"] = chunk["id"].isin(worst_book_ids_of_all_time)
         # chunk["oneOftheWorst"] = chunk.apply(lambda row : str(row['id']) in worst_book_ids_of_all_time, axis=1) # TODO: str() is necessary. It would be better if both were ints. But this raises errors.
         if flag:
