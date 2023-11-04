@@ -6,6 +6,8 @@ from datetime import datetime
 import os
 import warnings
 from scipy.stats import fisher_exact # with this we can perform the fisher test
+from scipy.stats import ks_2samp # kolmogorov-smirnov-two-sample-test
+from sklearn.linear_model import LinearRegression
 
 ### RQ_7_1
 
@@ -169,4 +171,150 @@ def perform_fisher_test_and_interprete(contingency_table, alpha = 0.05):
 
     print("Since the pvalue is approximately", '{:.6f}'.format(pval), strres)
     return pval
+
+
+### RQ 8
+
+def answer_rq_8_1(data_path):
+    books_df = None
+    processed_rows = 0
+    chunksize = 2*10**5
+    nrows = None # 2*10**3
+    flag = True
+
+    start = perf_counter()
+    for chunk in pd.read_json(os.path.join(*data_path, 'lighter_books' + '.json'), lines=True, chunksize=chunksize, nrows=nrows):
+        processed_rows += len(chunk)
+        chunk = chunk[['ratings_count','average_rating','num_pages']]
+        chunk.loc[:,'ratings_count'] = pd.to_numeric(chunk.loc[:,'num_pages'], errors='coerce')
+        chunk.loc[:,'average_rating'] = pd.to_numeric(chunk['average_rating'], errors='coerce')
+        chunk.loc[:,'num_pages'] = pd.to_numeric(chunk['num_pages'], errors='coerce')
+        chunk = chunk[ (~chunk['average_rating'].isna()) & (~chunk['num_pages'].isna()) & (~chunk['ratings_count'].isna())
+                        & (chunk['num_pages']>0) & (0 <= chunk['average_rating']) & (chunk['average_rating'] <= 5) & (chunk['ratings_count']>0 )]
+        chunk.loc[:,'average_rating'] = chunk['average_rating']
+        # chunk['log(num_pages)'] = np.log10(chunk['num_pages'])
+        chunk.loc[:,'log(num_pages)'] = np.log10(chunk['num_pages'])
+        chunk.loc[:, 'log(num_pages)'] = chunk.apply( lambda row : np.log10(row['num_pages']) , axis=1)
+        if flag:
+            books_df = chunk
+            flag = False
+        else:
+            books_df = pd.concat([books_df, chunk], axis=0)
+        print("processed rows:", processed_rows)
+    # books_df
+    end = perf_counter()
+    duration = end - start
+    print('The process lasted approximately', '{:.2f}'.format(duration), "seconds.")
+    return books_df
+
+
+def get_languages(data_path):
+    processed_rows = 0
+    chunksize = 10**4
+    nrows = None
+    languages_set = set()
+    chunks = pd.read_json(os.path.join(*data_path, 'lighter_books' + '.json'), lines=True, chunksize=chunksize, nrows=nrows, dtype={'num_pages':'numeric', 'average_rating':'numeric'})
+    for chunk in chunks:
+        processed_rows += len(chunk)
+        languages_set = languages_set.union(set(chunk['language']))
+        print(processed_rows)
+    return languages_set
+
+def get_eng_vs_non_eng(data_path, no_languages):
+    books_df = None
+    processed_rows = 0
+    chunksize = 10**5
+    nrows = None
+    flag = True
+
+    start = perf_counter()
+    chunks = pd.read_json(os.path.join(*data_path, 'lighter_books' + '.json'), lines=True, chunksize=chunksize, nrows=nrows, dtype={'num_pages':'numeric', 'average_rating':'numeric'})
+    for chunk in chunks:
+        processed_rows += len(chunk)
+        chunk = chunk[['ratings_count','average_rating','language']]
+        chunk = chunk[ ~(chunk['language'].isin(no_languages)) ]
+        chunk['ratings_count'] = pd.to_numeric(chunk['ratings_count'], errors='coerce')
+        chunk['average_rating'] = pd.to_numeric(chunk['average_rating'], errors='coerce')
+        chunk = chunk[ (~chunk['average_rating'].isna()) & (~chunk['ratings_count'].isna())
+                        & (0 <= chunk['average_rating']) & (chunk['average_rating'] <= 5) & (chunk['ratings_count']>0 )]
+        chunk['en'] = chunk['language'].apply(lambda entry : entry[:2] == "en" )
+        if flag:
+            books_df = chunk
+            flag = False
+        else:
+            books_df = pd.concat([books_df, chunk], axis=0)
+        print(processed_rows)
+
+    grouped_series = books_df.groupby('en')['average_rating'].apply(list)
+    end = perf_counter()
+    duration = end - start
+    print('The process lasted approximately', '{:.2f}'.format(duration), "seconds.")
+    return pd.DataFrame(grouped_series)
+
+
+def perform_ks2s_test_and_interprete(sample1, sample2, alpha=0.05):
+    _, pval  = ks_2samp(sample1, sample2)
+    test_result = functions.eval_pval(pval, alpha, "a difference in the analyzed distributions")
+    return pval
+
+def get_data_on_lazyness(data_path):
+    authors_df = None
+    processed_rows = 0
+    chunksize = 10**5
+    nrows = None # 4*10**3
+    flag = True
+
+    start = perf_counter()
+    chunks = pd.read_json(os.path.join(*data_path, 'lighter_authors' + '.json'), lines=True, chunksize=chunksize, nrows=nrows, dtype={'num_pages':'numeric', 'average_rating':'numeric'})
+    for chunk in chunks:
+        processed_rows += len(chunk)
+        chunk = chunk[['text_reviews_count', 'fans_count']]
+        chunk['text_reviews_count'] = pd.to_numeric(chunk['text_reviews_count'], errors='coerce')
+        chunk['fans_count'] = pd.to_numeric(chunk['fans_count'], errors='coerce')
+        chunk = chunk[ (~chunk['text_reviews_count'].isna()) & (~chunk['fans_count'].isna())
+                        & (chunk['text_reviews_count']>=0 ) & (chunk['fans_count']>=0 )]
+        chunk['8th-root(text_reviews_count)'] = (chunk['text_reviews_count'])**(1/8) # since we allow for 0-values, we use the root to lower the impact of outliers
+        chunk['8th-root(fans_count)'] = (chunk['fans_count'])**(1/8)
+
+        if flag:
+            authors_df = chunk
+            flag = False
+        else:
+            authors_df = pd.concat([authors_df, chunk], axis=0)
+        print(processed_rows)
+    end = perf_counter()
+    duration = end - start
+    print('The process lasted approximately', '{:.2f}'.format(duration), "seconds.")
+    return authors_df
+
+def perform_lin_regression(model_set, col_name_1, col_name_2  ):
+    model = LinearRegression()
+    model.fit(model_set[[col_name_1]], model_set[col_name_2])
+    score = model.score(model_set[[col_name_1]], model_set[col_name_2])
+    return model, score
+
+
+def interprete_lin_regression(model,score, eps=0.05):
+    print('slope is', model.coef_[0])
+    print('intercept is' ,model.intercept_)
+    # print('residuals is', model.resid )
+    print('R-squared-Coefficient is', score)
+    if model.coef_[0] > eps:
+        print("Since the slope is significantly greater than zero \nwe see that the more fans an author has the more text_reviews he has. \nHence we can refuse the stated claim that fans of authors with more fans would be lazier. ")
+    elif model.coef_[0] < - eps:
+        print("Since the slope is significantly lower than zero \nwe see that the more fans an author has the less text_reviews he has.  \nHence we can confirm the claim that fans of authors with more fans are lazier")
+    else:
+        print("Since the slope does not differ significantly from zero \nwe there's no evidence for a correlation between fans_count and text_reviews_count.")
+
+    print('The R-squared-Coefficient is with approximately', '{:.2f}'.format(score))
+    if score <= 0.1 :
+        print("very low. Hence the model explains (nearly) nothing of the seen variance.")
+    elif score <= 0.5:
+        print("is low. Hence the model does explain only little of the seen variance.")
+    elif score <= 0.7:
+        print("is at least half. Hence the model does explain some of the seen variance.")
+    elif score <= 0.9:
+        print("is high. Hence the model does explain a big part of the seen variance.")
+    else:
+        print("is very high. Hence the model does explain (nearly) all of the seen variance.")
 

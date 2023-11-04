@@ -122,3 +122,21 @@ def myDateToSeconds(initial_date, current_date):
 
 def listlen(*args,**kwargs):
     return len(list(*args))
+
+
+
+def eval_pval(pval, alpha, alternative):
+    """
+    Takes a p-value, a significance level alpha and the alternative formulated as an appropriate string
+    Returns true iff there's significance for the alternative. Otherwise it returns false.
+    Further prints a sentence describing the result to the console.
+    """
+    print('assuming a test-level of alpha =', alpha)
+    strres = ""
+    if pval <= alpha:
+        strres = ", i.e. less than or equal to alpha, \nthere's significance for " + alternative + "."
+    else:
+        strres = ", i.e. strictly greater than alpha, \nthere's no significance for " + alternative + "."
+
+    print("Since the pvalue is approximately", '{:.6f}'.format(pval), strres)
+    return pval <= alpha
