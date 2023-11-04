@@ -15,7 +15,7 @@ chunksize = 10**3
 
 ### RQ_7_1
 
-def answer_rq_7_1(data_path): # TODO: debug! KEYERROR
+def answer_rq_7_1(data_path):
     # chunksize = 2*10**5
     # nrows = None
     processed_rows = 0
@@ -28,7 +28,7 @@ def answer_rq_7_1(data_path): # TODO: debug! KEYERROR
         chunk = chunk[["id","ratings_count", "rating_dist"]] # to shrink needed memory
         chunk = chunk[chunk["ratings_count"]>0] # to exclude books without ratings
         chunk["percentage"] = chunk.apply(lambda row : functions.getRatio(functions.checkValidityRQ7_1(functions.parseToDict(row['rating_dist'])),['4','5'],'total'), axis=1)
-        chunk = chunk[ chunk['percentage'] is not None ]
+        chunk = chunk[ chunk['percentage'].notnull()  ]
         books_with_at_least_one_rating += len(chunk)
         books_with_30Percent_of_ratings_above_4 += len(chunk[chunk["percentage"] > 0.3]) # we interpret over as strictly over
         # print('processed rows:', processed_rows) # in total
