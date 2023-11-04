@@ -10,7 +10,7 @@ from scipy.stats import ks_2samp # kolmogorov-smirnov-two-sample-test
 from sklearn.linear_model import LinearRegression
 
 chunksize = 10**3
-nrows = None
+nrows = 3*10**3
 
 def initialize_processing_parameters_from_config():
     global chunksize
@@ -18,6 +18,8 @@ def initialize_processing_parameters_from_config():
     print('chunksize set to', chunksize)
     global nrows
     nrows = functions.get_from_config('nrows')
+    if nrows < 0:
+        nrows = None
     print('nrows set to', nrows)
 
 ### RQ_7_1
