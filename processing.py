@@ -9,9 +9,14 @@ from scipy.stats import fisher_exact # with this we can perform the fisher test
 from scipy.stats import ks_2samp # kolmogorov-smirnov-two-sample-test
 from sklearn.linear_model import LinearRegression
 
-
-nrows = 3*10**3
 chunksize = 10**3
+nrows = None
+
+def initialize_processing_parameters_from_config():
+    global chunksize
+    chunksize = functions.get_from_config('chunksize')
+    global nrows
+    nrows = functions.get_from_config('nrows')
 
 ### RQ_7_1
 
