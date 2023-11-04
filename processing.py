@@ -1,7 +1,7 @@
 import functions
 import numpy as np
 import pandas as pd
-from timer import perf_counter
+from time import perf_counter
 from datetime import datetime
 import os
 import warnings
@@ -11,7 +11,7 @@ from sklearn.linear_model import LinearRegression
 
 ### RQ_7_1
 
-def answer_rq_7_1(data_path):
+def answer_rq_7_1(data_path): # TODO: debug! KEYERROR
     chunksize = 2*10**5
     nrows = None
     processed_rows = 0
@@ -81,6 +81,7 @@ def get_worst_book_ids_of_all_time(data_path):
     chunksize = 10**4
     nrows = None # 2*10**4
     flag = True
+    processed_rows = 0
 
     start = perf_counter()
     for chunk in pd.read_json(os.path.join( *data_path, 'list' + ".json") , lines=True, chunksize=chunksize, nrows=nrows):
@@ -200,7 +201,7 @@ def answer_rq_8_1(data_path):
             flag = False
         else:
             books_df = pd.concat([books_df, chunk], axis=0)
-        print("processed rows:", processed_rows)
+        # print("processed rows:", processed_rows)
     # books_df
     end = perf_counter()
     duration = end - start
@@ -217,7 +218,7 @@ def get_languages(data_path):
     for chunk in chunks:
         processed_rows += len(chunk)
         languages_set = languages_set.union(set(chunk['language']))
-        print(processed_rows)
+        # print(processed_rows)
     return languages_set
 
 def get_eng_vs_non_eng(data_path, no_languages):
@@ -243,7 +244,7 @@ def get_eng_vs_non_eng(data_path, no_languages):
             flag = False
         else:
             books_df = pd.concat([books_df, chunk], axis=0)
-        print(processed_rows)
+        # print(processed_rows)
 
     grouped_series = books_df.groupby('en')['average_rating'].apply(list)
     end = perf_counter()
@@ -281,7 +282,7 @@ def get_data_on_lazyness(data_path):
             flag = False
         else:
             authors_df = pd.concat([authors_df, chunk], axis=0)
-        print(processed_rows)
+        # print(processed_rows)
     end = perf_counter()
     duration = end - start
     print('The process lasted approximately', '{:.2f}'.format(duration), "seconds.")
