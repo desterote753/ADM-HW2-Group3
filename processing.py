@@ -144,10 +144,13 @@ def get_contingency_table_for_rq_7_3(data_path, worst_book_ids_of_all_time):
         processed_rows += len(chunk)
         chunk = chunk[["id","num_pages"]] # to shrink needed memory
         chunk = chunk[(chunk["num_pages"]!="") & (chunk["id"]!="") ] # to exclude books without pages mentioned or invalid ids
-        chunk.astype({'id':'int', 'num_pages':'int' })
+        chunk = chunk.astype({'id':'int', 'num_pages':'int' })
+        # chunk.loc[:,'id'] = pd.to_numeric(chunk['id'], errors='coerce')
         chunk = chunk[chunk["num_pages"]>0] # 0 or less pages is assumed to be a database error or a result of non-knowledge.
         chunk["gt700"] = chunk.apply( lambda row: row['num_pages'] > 700 , axis=1)
-        chunk["oneOftheWorst"] = chunk.apply(lambda row : str(row['id']) in worst_book_ids_of_all_time, axis=1) # TODO: str() is necessary. It would be better if both were ints. But this raises errors.
+        chunk = chunk[ ~chunk['id'].isna()]
+        chunk.loc[:,"oneOftheWorst"] = chunk["id"].isin(worst_book_ids_of_all_time)
+        # chunk["oneOftheWorst"] = chunk.apply(lambda row : str(row['id']) in worst_book_ids_of_all_time, axis=1) # TODO: str() is necessary. It would be better if both were ints. But this raises errors.
         if flag:
             contingency_table = pd.crosstab(chunk['oneOftheWorst'], chunk['gt700'])
             flag = False
@@ -163,11 +166,14 @@ def get_contingency_table_for_rq_7_3(data_path, worst_book_ids_of_all_time):
 
 
 def answer_rq_7_3(contingency_table):
-    res = contingency_table.loc[True,True] / (contingency_table.loc[True,False]+contingency_table.loc[True,True])
+    worstbooks_gt700pages = contingency_table.loc[True,True] 
+    books_gt700pages = contingency_table.loc[True,False ] +worstbooks_gt700pages 
+    res = worstbooks_gt700pages/books_gt700pages
+    # res = contingency_table.loc[True,True] / (contingency_table.loc[True,False]+contingency_table.loc[True,True])
     print("Now we can provide the answer to 3.")
-    print("""by computing the ratio of the entry for "gt700 and oneOftheWorst", which is """, contingency_table.loc[True,True], ",")
-    print("divided by the number of books with over 700 pages, which is", contingency_table.loc[True,False]+contingency_table.loc[True,True] ,".")
-    print("This yields approximately:", '{:.4f}'.format(res))
+    print("""by computing the ratio of the entry for "gt700 and oneOftheWorst", which is """, worstbooks_gt700pages, ",")
+    print("divided by the number of books with over 700 pages, which is", books_gt700pages ,".")
+    print("This yields a probability of approximately:", '{:.4f}'.format(res))
     return res
 
 
@@ -205,8 +211,8 @@ def answer_rq_8_1(data_path):
                         & (chunk['num_pages']>0) & (0 <= chunk['average_rating']) & (chunk['average_rating'] <= 5) & (chunk['ratings_count']>0 )]
         chunk.loc[:,'average_rating'] = chunk['average_rating']
         # chunk['log(num_pages)'] = np.log10(chunk['num_pages'])
-        chunk.loc[:,'log(num_pages)'] = np.log10(chunk['num_pages'])
-        chunk.loc[:, 'log(num_pages)'] = chunk.apply( lambda row : np.log10(row['num_pages']) , axis=1)
+        # chunk.loc[:,'log(num_pages)'] = np.log10(chunk['num_pages'])
+        chunk.loc[:, 'log10(num_pages)'] = chunk.apply( lambda row : np.log10(row['num_pages']) , axis=1)
         if flag:
             books_df = chunk
             flag = False
@@ -261,7 +267,7 @@ def get_eng_vs_non_eng(data_path, no_languages):
     end = perf_counter()
     duration = end - start
     print('The process lasted approximately', '{:.2f}'.format(duration), "seconds.")
-    return pd.DataFrame(grouped_series)
+    return books_df, pd.DataFrame(grouped_series)
 
 
 def perform_ks2s_test_and_interprete(sample1, sample2, alpha=0.05):
