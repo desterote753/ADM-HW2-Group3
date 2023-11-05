@@ -1,0 +1,7 @@
+{
+    "cloud": ["drive", "Othercomputers", "Mein_Laptop", "hw01_lighter_updated"],
+    "harddrive": ["F:\\adm", "hw01_lighter_updated"],
+    "chunksize": 100000,
+    "nrows": -1,
+    "doesntMatter": 0
+}
