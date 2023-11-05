@@ -1,7 +1,7 @@
 import functions
 import numpy as np
 import pandas as pd
-from timer import perf_counter
+from time import perf_counter
 from datetime import datetime
 import os
 import warnings
@@ -9,11 +9,38 @@ from scipy.stats import fisher_exact # with this we can perform the fisher test
 from scipy.stats import ks_2samp # kolmogorov-smirnov-two-sample-test
 from sklearn.linear_model import LinearRegression
 
+chunksize = 10**3
+nrows = 3*10**3
+
+def initialize_processing_parameters_from_config():
+    global chunksize
+    chunksize = functions.get_from_config('chunksize')
+    print('chunksize set to', chunksize)
+    global nrows
+    nrows = functions.get_from_config('nrows')
+    if nrows < 0:
+        nrows = None
+    print('nrows set to', nrows)
+
+
+### datacleaning
+
+def checkNumerics(df, col_name):
+    df = df[[col_name]]
+    df.loc[:,col_name] = pd.to_numeric(df[col_name], errors='coerce')
+    df.loc[:,'notNull'] = df[col_name].notnull()
+    return df
+
+    
+
+    
+
+
 ### RQ_7_1
 
 def answer_rq_7_1(data_path):
-    chunksize = 2*10**5
-    nrows = None
+    # chunksize = 2*10**5
+    # nrows = None
     processed_rows = 0
     books_with_at_least_one_rating = 0
     books_with_30Percent_of_ratings_above_4 = 0
@@ -24,7 +51,7 @@ def answer_rq_7_1(data_path):
         chunk = chunk[["id","ratings_count", "rating_dist"]] # to shrink needed memory
         chunk = chunk[chunk["ratings_count"]>0] # to exclude books without ratings
         chunk["percentage"] = chunk.apply(lambda row : functions.getRatio(functions.checkValidityRQ7_1(functions.parseToDict(row['rating_dist'])),['4','5'],'total'), axis=1)
-        chunk = chunk[ chunk['percentage'] is not None ]
+        chunk = chunk[ chunk['percentage'].notnull()  ]
         books_with_at_least_one_rating += len(chunk)
         books_with_30Percent_of_ratings_above_4 += len(chunk[chunk["percentage"] > 0.3]) # we interpret over as strictly over
         # print('processed rows:', processed_rows) # in total
@@ -47,8 +74,8 @@ def answer_rq_7_2(data_path):
     processed_rows = 0
     df = None
     flag = True
-    chunksize = 2*10**5
-    nrows = None # 3*10**5
+    # chunksize = 2*10**5
+    # nrows = None # 3*10**5
 
     start = perf_counter()
     for chunk in pd.read_json( os.path.join( *data_path, "lighter_books" + ".json"), lines=True, nrows=nrows, chunksize=chunksize):
@@ -78,12 +105,13 @@ def get_worst_book_ids_of_all_time(data_path):
     # assessing the books inside the list "The Worst Books of All Time".
     df_new = None # for the sake of RAM
     list_df = None
-    chunksize = 10**4
-    nrows = None # 2*10**4
+    # chunksize = 10**4
+    # nrows = None # 2*10**4
     flag = True
+    processed_rows = 0
 
     start = perf_counter()
-    for chunk in pd.read_json(os.path.join( *data_path, 'list' + ".json") , lines=True, chunksize=chunksize, nrows=nrows):
+    for chunk in pd.read_json(os.path.join( *data_path, 'list' + ".json") , lines=True, chunksize=chunksize//5, nrows=nrows):
         processed_rows += len(chunk)
         chunk = chunk[chunk['title']=="The Worst Books of All Time"]
         if flag:
@@ -104,11 +132,15 @@ def get_worst_book_ids_of_all_time(data_path):
             warnings.warn("More  than 1 entry")
 
     # assessing the book_ids and deleting duplicates
-    worst_book_ids_of_all_time = [ entry['book_id'] for entry in worst_books_of_all_time ] # assessing the book_ids
+    # worst_book_ids_of_all_time = [ entry['book_id'] for entry in worst_books_of_all_time ] # assessing the book_ids
     worst_book_ids_of_all_time_set = set()
-    for book_id in worst_book_ids_of_all_time:
+    for entry in worst_books_of_all_time:
+    # for book_id in worst_book_ids_of_all_time:
         try:
-            worst_book_ids_of_all_time_set.add(int(book_id))
+            book_id = str(entry['book_id'])
+            if len(book_id) <= 0:
+                raise ValueError
+            worst_book_ids_of_all_time_set.add(book_id)
         except Exception as e:
             print(e)
             pass
@@ -124,18 +156,23 @@ def get_contingency_table_for_rq_7_3(data_path, worst_book_ids_of_all_time):
     contingency_table = None
     flag = True
 
-    chunksize = 10**5
-    nrows = None # 2*10**5
+    # chunksize = 10**5
+    # nrows = None # 2*10**5
 
     start = perf_counter()
-    for chunk in pd.read_json(os.path.join( *data_path, "lighter_books_updated" + ".json"), lines=True, chunksize = chunksize, nrows = nrows, dtype=None ):
+    for chunk in pd.read_json(os.path.join( *data_path, "lighter_books" + ".json"), lines=True, chunksize = chunksize, nrows = nrows, dtype=None ):
         processed_rows += len(chunk)
         chunk = chunk[["id","num_pages"]] # to shrink needed memory
-        chunk = chunk[(chunk["num_pages"]!="") & (chunk["id"]!="") ] # to exclude books without pages mentioned or invalid ids
-        chunk.astype({'id':'int', 'num_pages':'int' })
+        # chunk.loc[:,'id'] = pd.to_numeric(chunk['id'], errors='coerce')
+        # chunk.loc[:,'num_pages'] = pd.to_numeric(chunk['num_pages'], errors='coerce')
+        chunk = chunk[ chunk['id'].notnull() & chunk['num_pages'].notnull() ]
+        chunk = chunk[ (~chunk['id'].isna()) & (~chunk['num_pages'].isna()) ]
+        chunk = chunk[ (chunk['id'] != "" ) & (chunk['num_pages'] != "") ]
+        chunk.loc[:,'num_pages'] = chunk['num_pages'].astype(int)
         chunk = chunk[chunk["num_pages"]>0] # 0 or less pages is assumed to be a database error or a result of non-knowledge.
         chunk["gt700"] = chunk.apply( lambda row: row['num_pages'] > 700 , axis=1)
-        chunk["oneOftheWorst"] = chunk.apply(lambda row : str(row['id']) in worst_book_ids_of_all_time, axis=1) # TODO: str() is necessary. It would be better if both were ints. But this raises errors.
+        # chunk.loc[:,"oneOftheWorst"] = chunk["id"].isin(worst_book_ids_of_all_time)
+        chunk.loc[:,"oneOftheWorst"] = chunk.apply(lambda row : str(row['id']) in worst_book_ids_of_all_time, axis=1) # TODO: str() is necessary. It would be better if both were ints. But this raises errors.
         if flag:
             contingency_table = pd.crosstab(chunk['oneOftheWorst'], chunk['gt700'])
             flag = False
@@ -151,11 +188,14 @@ def get_contingency_table_for_rq_7_3(data_path, worst_book_ids_of_all_time):
 
 
 def answer_rq_7_3(contingency_table):
-    res = contingency_table.loc[True,True] / (contingency_table.loc[True,False]+contingency_table.loc[True,True])
+    worstbooks_gt700pages = contingency_table.loc[True,True] 
+    books_gt700pages = contingency_table.loc[True,False ] +worstbooks_gt700pages 
+    res = worstbooks_gt700pages/books_gt700pages
+    # res = contingency_table.loc[True,True] / (contingency_table.loc[True,False]+contingency_table.loc[True,True])
     print("Now we can provide the answer to 3.")
-    print("""by computing the ratio of the entry for "gt700 and oneOftheWorst", which is """, contingency_table.loc[True,True], ",")
-    print("divided by the number of books with over 700 pages, which is", contingency_table.loc[True,False]+contingency_table.loc[True,True] ,".")
-    print("This yields approximately:", '{:.4f}'.format(res))
+    print("""by computing the ratio of the entry for "gt700 and oneOftheWorst", which is """, worstbooks_gt700pages, ",")
+    print("divided by the number of books with over 700 pages, which is", books_gt700pages ,".")
+    print("This yields a probability of approximately:", '{:.4f}'.format(res))
     return res
 
 
@@ -178,8 +218,8 @@ def perform_fisher_test_and_interprete(contingency_table, alpha = 0.05):
 def answer_rq_8_1(data_path):
     books_df = None
     processed_rows = 0
-    chunksize = 2*10**5
-    nrows = None # 2*10**3
+    # chunksize = 2*10**5
+    # nrows = None # 2*10**3
     flag = True
 
     start = perf_counter()
@@ -193,14 +233,14 @@ def answer_rq_8_1(data_path):
                         & (chunk['num_pages']>0) & (0 <= chunk['average_rating']) & (chunk['average_rating'] <= 5) & (chunk['ratings_count']>0 )]
         chunk.loc[:,'average_rating'] = chunk['average_rating']
         # chunk['log(num_pages)'] = np.log10(chunk['num_pages'])
-        chunk.loc[:,'log(num_pages)'] = np.log10(chunk['num_pages'])
-        chunk.loc[:, 'log(num_pages)'] = chunk.apply( lambda row : np.log10(row['num_pages']) , axis=1)
+        # chunk.loc[:,'log(num_pages)'] = np.log10(chunk['num_pages'])
+        chunk.loc[:, 'log10(num_pages)'] = chunk.apply( lambda row : np.log10(row['num_pages']) , axis=1)
         if flag:
             books_df = chunk
             flag = False
         else:
             books_df = pd.concat([books_df, chunk], axis=0)
-        print("processed rows:", processed_rows)
+        # print("processed rows:", processed_rows)
     # books_df
     end = perf_counter()
     duration = end - start
@@ -210,21 +250,21 @@ def answer_rq_8_1(data_path):
 
 def get_languages(data_path):
     processed_rows = 0
-    chunksize = 10**4
-    nrows = None
+    # chunksize = 10**4
+    # nrows = None
     languages_set = set()
     chunks = pd.read_json(os.path.join(*data_path, 'lighter_books' + '.json'), lines=True, chunksize=chunksize, nrows=nrows, dtype={'num_pages':'numeric', 'average_rating':'numeric'})
     for chunk in chunks:
         processed_rows += len(chunk)
         languages_set = languages_set.union(set(chunk['language']))
-        print(processed_rows)
+        # print(processed_rows)
     return languages_set
 
 def get_eng_vs_non_eng(data_path, no_languages):
     books_df = None
     processed_rows = 0
-    chunksize = 10**5
-    nrows = None
+    # chunksize = 10**5
+    # nrows = None
     flag = True
 
     start = perf_counter()
@@ -243,13 +283,13 @@ def get_eng_vs_non_eng(data_path, no_languages):
             flag = False
         else:
             books_df = pd.concat([books_df, chunk], axis=0)
-        print(processed_rows)
+        # print(processed_rows)
 
     grouped_series = books_df.groupby('en')['average_rating'].apply(list)
     end = perf_counter()
     duration = end - start
     print('The process lasted approximately', '{:.2f}'.format(duration), "seconds.")
-    return pd.DataFrame(grouped_series)
+    return books_df, pd.DataFrame(grouped_series)
 
 
 def perform_ks2s_test_and_interprete(sample1, sample2, alpha=0.05):
@@ -260,8 +300,8 @@ def perform_ks2s_test_and_interprete(sample1, sample2, alpha=0.05):
 def get_data_on_lazyness(data_path):
     authors_df = None
     processed_rows = 0
-    chunksize = 10**5
-    nrows = None # 4*10**3
+    # chunksize = 10**5
+    # nrows = None # 4*10**3
     flag = True
 
     start = perf_counter()
@@ -281,7 +321,7 @@ def get_data_on_lazyness(data_path):
             flag = False
         else:
             authors_df = pd.concat([authors_df, chunk], axis=0)
-        print(processed_rows)
+        # print(processed_rows)
     end = perf_counter()
     duration = end - start
     print('The process lasted approximately', '{:.2f}'.format(duration), "seconds.")
