@@ -1,0 +1,1 @@
+https://nbviewer.org/github/desterote753/ADM-HW2-Group3/blob/main/main.ipynb
