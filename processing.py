@@ -225,16 +225,13 @@ def answer_rq_8_1(data_path):
     start = perf_counter()
     for chunk in pd.read_json(os.path.join(*data_path, 'lighter_books' + '.json'), lines=True, chunksize=chunksize, nrows=nrows):
         processed_rows += len(chunk)
-        chunk = chunk[['ratings_count','average_rating','num_pages']]
+        chunk = chunk[['ratings_count','average_rating','num_pages']].copy() # since without copy() a SettingWithCopyWarning is printed
         chunk.loc[:,'ratings_count'] = pd.to_numeric(chunk.loc[:,'num_pages'], errors='coerce')
         chunk.loc[:,'average_rating'] = pd.to_numeric(chunk['average_rating'], errors='coerce')
         chunk.loc[:,'num_pages'] = pd.to_numeric(chunk['num_pages'], errors='coerce')
         chunk = chunk[ (~chunk['average_rating'].isna()) & (~chunk['num_pages'].isna()) & (~chunk['ratings_count'].isna())
                         & (chunk['num_pages']>0) & (0 <= chunk['average_rating']) & (chunk['average_rating'] <= 5) & (chunk['ratings_count']>0 )]
-        chunk.loc[:,'average_rating'] = chunk['average_rating']
-        # chunk['log(num_pages)'] = np.log10(chunk['num_pages'])
-        # chunk.loc[:,'log(num_pages)'] = np.log10(chunk['num_pages'])
-        chunk.loc[:, 'log10(num_pages)'] = chunk.apply( lambda row : np.log10(row['num_pages']) , axis=1)
+        chunk.loc[:, 'log10(num_pages)'] = chunk.apply( lambda row : np.log10(row['num_pages']) , axis=1).copy() # since without copy() a SettingWithCopyWarning is printed
         if flag:
             books_df = chunk
             flag = False
@@ -271,13 +268,13 @@ def get_eng_vs_non_eng(data_path, no_languages):
     chunks = pd.read_json(os.path.join(*data_path, 'lighter_books' + '.json'), lines=True, chunksize=chunksize, nrows=nrows, dtype={'num_pages':'numeric', 'average_rating':'numeric'})
     for chunk in chunks:
         processed_rows += len(chunk)
-        chunk = chunk[['ratings_count','average_rating','language']]
+        chunk = chunk[['ratings_count','average_rating','language']].copy() # since without copy() a SettingWithCopyWarning is printed
         chunk = chunk[ ~(chunk['language'].isin(no_languages)) ]
-        chunk['ratings_count'] = pd.to_numeric(chunk['ratings_count'], errors='coerce')
-        chunk['average_rating'] = pd.to_numeric(chunk['average_rating'], errors='coerce')
+        chunk.loc[:,'ratings_count'] = pd.to_numeric(chunk['ratings_count'], errors='coerce')
+        chunk.loc[:,'average_rating'] = pd.to_numeric(chunk['average_rating'], errors='coerce')
         chunk = chunk[ (~chunk['average_rating'].isna()) & (~chunk['ratings_count'].isna())
                         & (0 <= chunk['average_rating']) & (chunk['average_rating'] <= 5) & (chunk['ratings_count']>0 )]
-        chunk['en'] = chunk['language'].apply(lambda entry : entry[:2] == "en" )
+        chunk.loc[:,'en'] = chunk['language'].apply(lambda entry : entry[:2] == "en" )
         if flag:
             books_df = chunk
             flag = False
